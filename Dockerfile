@@ -1,38 +1,32 @@
-# Stage 1 - Build dependencies
-FROM composer:2.6 AS vendor
+# Stage 1: Build dependencies
+FROM composer:2 AS vendor
 
 WORKDIR /app
 
-# Copy composer files and install dependencies (no dev)
+# Copy composer files and install dependencies
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
-# Stage 2 - PHP with Apache
+# Copy the rest of the application
+COPY . .
+
+# Stage 2: PHP + Apache
 FROM php:8.2-apache
 
 # Install PHP extensions
-RUN apt-get update && apt-get install -y \
-    git unzip libpng-dev libonig-dev libxml2-dev zip curl \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+RUN docker-php-ext-install pdo pdo_mysql
 
-# Enable Apache rewrite module
-RUN a2enmod rewrite
-
-# Set working directory
+# Set working directory inside container
 WORKDIR /var/www/html
 
-# Copy existing app
-COPY . .
-
-# Copy vendor folder from build stage
-COPY --from=vendor /app/vendor /var/www/html/vendor
+# Copy project files from previous stage
+COPY --from=vendor /app ./
 
 # Give permissions to Laravel folders
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chmod -R 777 storage bootstrap/cache
 
 # Expose port 8000
 EXPOSE 8000
 
-# Run Apache
+# Start Apache in foreground
 CMD ["apache2-foreground"]
