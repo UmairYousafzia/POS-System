@@ -1,0 +1,19 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        if (Schema::hasTable('media')) {
+            Schema::drop('media');
+        }
+    }
+
+    public function down(): void
+    {
+        // No-op: media table is owned by the removed package
+    }
+};
